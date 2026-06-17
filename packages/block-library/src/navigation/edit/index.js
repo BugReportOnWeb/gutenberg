@@ -32,6 +32,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
 import {
 	__experimentalToolsPanel as ToolsPanel,
 	__experimentalToolsPanelItem as ToolsPanelItem,
+	__experimentalNumberControl as NumberControl,
 	ToggleControl,
 	__experimentalToggleGroupControl as ToggleGroupControl,
 	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
@@ -270,6 +271,7 @@ function Navigation( {
 		overlay,
 		showSubmenuIcon,
 		templateLock,
+		depth,
 		layout: {
 			justifyContent,
 			orientation = 'horizontal',
@@ -789,6 +791,7 @@ function Navigation( {
 								overlayMenu: 'mobile',
 								hasIcon: true,
 								icon: 'handle',
+								depth: 0,
 							} );
 						} }
 						dropdownMenuProps={ dropdownMenuProps }
@@ -879,6 +882,33 @@ function Navigation( {
 											submenuVisibility === 'always'
 										}
 										label={ __( 'Show arrow' ) }
+									/>
+								</ToolsPanelItem>
+
+								<ToolsPanelItem
+									hasValue={ () => !! depth }
+									label={ __( 'Submenu depth' ) }
+									onDeselect={ () =>
+										setAttributes( { depth: 0 } )
+									}
+									isShownByDefault
+								>
+									<NumberControl
+										__next40pxDefaultSize
+										label={ __( 'Submenu depth' ) }
+										help={ __(
+											'Limit the number of submenu levels to display. Set to 0 for no limit'
+										) }
+										value={ depth }
+										min={ 0 }
+										onChange={ ( value ) =>
+											setAttributes( {
+												depth:
+													value !== ''
+														? parseInt( value, 10 )
+														: 0,
+											} )
+										}
 									/>
 								</ToolsPanelItem>
 

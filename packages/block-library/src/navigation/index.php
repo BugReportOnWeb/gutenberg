@@ -328,6 +328,49 @@ class WP_Navigation_Block_Renderer {
 	}
 
 	/**
+	 * Recursively filters inner blocks to limit nesting depth.
+	 *
+	 * @since 7.x.0
+	 *
+	 * @param WP_Block_List $inner_blocks  The list of inner blocks.
+	 * @param int           $depth         Maximum depth to render
+	 * @param int           $current_depth The current depth level
+	 * @return array Filtered array of parsed block arrays.
+	 */
+	private static function filter_inner_blocks_by_depth( $inner_blocks, $depth, $current_depth = 1 ) {
+		// 0 means unlimited, so no filtering.
+		if ( 0 === $depth ) {
+			return $inner_blocks;
+		}
+
+		$filtered = array();
+
+		foreach ( $inner_blocks as $block ) {
+			if ( 'core/navigation-submenu' === $block->name && $current_depth >= $depth ) {
+				// Convert submenu to navigation-link and drop children
+				$parsed_block                 = $block->parsed_block;
+				$parsed_block['blockName']    = 'core/navigation-link';
+				$parsed_block['innerBlocks']  = array();
+				$parsed_block['innerContent'] = array();
+				$filtered[]                   = new WP_Block( $parsed_block, $block->context );
+			} elseif ( 'core/navigation-submenu' === $block->name ) {
+				// Recurse into submenu children
+				$parsed_block                = $block->parsed_block;
+				$parsed_block['innerBlocks'] = static::filter_inner_blocks_by_depth(
+					$block->inner_blocks,
+					$depth,
+					$current_depth + 1
+				);
+				$filtered[]                  = new WP_Block( $parsed_block, $block->context );
+			} else {
+				$filtered[] = $block;
+			}
+		}
+
+		return $filtered;
+	}
+
+	/**
 	 * Recursively disables overlay menu for navigation blocks within overlay blocks.
 	 * Prevents nested overlays (inception).
 	 *
@@ -522,6 +565,13 @@ class WP_Navigation_Block_Renderer {
 		$post_ids = block_core_navigation_get_post_ids( $inner_blocks );
 		if ( $post_ids ) {
 			_prime_post_caches( $post_ids, false, false );
+		}
+
+		// Filter inner blocks by depth if the depth attribute is set.
+		$depth = isset( $attributes['depth'] ) ? (int) $attributes['depth'] : 0;
+		if ( $depth > 0 ) {
+			$filtered     = static::filter_inner_blocks_by_depth( $inner_blocks, $depth );
+			$inner_blocks = new WP_Block_List( $filtered, $attributes );
 		}
 
 		return $inner_blocks;

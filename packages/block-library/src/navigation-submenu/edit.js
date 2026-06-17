@@ -85,7 +85,8 @@ export default function NavigationSubmenuEdit( {
 } ) {
 	const { label, url, description, kind, type, id } = attributes;
 
-	const { showSubmenuIcon, maxNestingLevel, submenuVisibility } = context;
+	const { showSubmenuIcon, maxNestingLevel, submenuVisibility, depth } =
+		context;
 	const blockEditingMode = useBlockEditingMode();
 
 	// Force click-only behavior in contentOnly mode to prevent hover dropdowns
@@ -263,8 +264,11 @@ export default function NavigationSubmenuEdit( {
 	// Always use overlay colors for submenus.
 	const innerBlocksColors = getColors( context, true );
 
+	// Used for preventing submenu visibility once configured depth limit is reached.
+	const isAtDepthLimit = depth > 0 && parentCount + 1 >= depth;
+
 	const allowedBlocks =
-		parentCount >= maxNestingLevel
+		parentCount >= maxNestingLevel || isAtDepthLimit
 			? ALLOWED_BLOCKS.filter(
 					( blockName ) => blockName !== 'core/navigation-submenu'
 			  )
@@ -405,12 +409,13 @@ export default function NavigationSubmenuEdit( {
 						/>
 					) }
 				</ParentElement>
-				{ ( showSubmenuIcon || openSubmenusOnClick ) && (
-					<span className="wp-block-navigation__submenu-icon">
-						<ItemSubmenuIcon />
-					</span>
-				) }
-				<div { ...innerBlocksProps } />
+				{ ! isAtDepthLimit &&
+					( showSubmenuIcon || openSubmenusOnClick ) && (
+						<span className="wp-block-navigation__submenu-icon">
+							<ItemSubmenuIcon />
+						</span>
+					) }
+				{ ! isAtDepthLimit && <div { ...innerBlocksProps } /> }
 			</div>
 		</>
 	);
